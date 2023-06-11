@@ -1,0 +1,61 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: immich
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: photos
+  namespace: immich
+spec:
+  storageClassName: ""
+  capacity:
+    storage: 100Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  mountOptions:
+    - hard
+    - nfsvers=4.1
+  nfs:
+    path: /mnt/stannard_speed/media/photos
+    server: 192.168.68.58
+    readOnly: false
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: photos-claim
+  namespace: immich
+spec:
+  storageClassName: ""
+  volumeName: photos
+  accessModes:
+    - ReadWriteMany
+#  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 100Gi
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: immich
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/GrantStannard/homelab.git
+      targetRevision: main
+      ref: homelab
+    - repoURL: https://immich-app.github.io/immich-charts/
+      targetRevision:  0.1.1
+      chart: immich
+      helm:
+        valueFiles:
+          - $homelab/immich/alpha/values.yaml
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: immich

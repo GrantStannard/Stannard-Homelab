@@ -1,0 +1,83 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: calibre
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: calibre
+  name: calibre
+  namespace: calibre
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: calibre
+  template:
+    metadata:
+      labels:
+        app: calibre
+    spec:
+      containers:
+        - name: calibre
+          image: lscr.io/linuxserver/calibre:latest
+          ports:
+            - name: dashboard-http
+              containerPort: 8080
+              protocol: TCP
+            - name: dashboard-https
+              containerPort: 8181
+              protocol: TCP
+            - name: webserver
+              containerPort: 8081
+              protocol: TCP
+          volumeMounts:
+            - name: calibre-config
+              mountPath: /config
+            - name: library
+              mountPath: /books
+      volumes:
+        - name: calibre-config
+          nfs:
+            server: 192.168.68.58
+            path: /mnt/fast_speed/opt/kubernetes/calibre
+        - name: library
+          nfs:
+            server: 192.168.68.58
+            path: /mnt/stannard_speed/media/library
+---
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: calibre
+  namespace: calibre
+spec:
+  selector:
+    app: calibre
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: calibre
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: calibre-ingress
+  namespace: calibre
+spec:
+  rules:
+    - host: calibre.grantstannard.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: calibre
+                port:
+                  number: 8080

@@ -1,0 +1,34 @@
+---
+# Source: kubernetes-cloudflare-ddns/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kubernetes-cloudflare-ddns
+  namespace: default
+type: Opaque
+data:
+  AUTH_KEY: "<REDACTED>"
+  NAME: "<REDACTED>"
+  RECORD_ID: "<REDACTED>"
+  ZONE_ID: "<REDACTED>"
+---
+# Source: kubernetes-cloudflare-ddns/templates/cronjob.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: kubernetes-cloudflare-ddns
+  namespace: default
+spec:
+  schedule: "*/5 * * * *"
+  successfulJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: kubernetes-cloudflare-ddns
+              image: "kubitodev/kubernetes-cloudflare-ddns:1.0.1"
+              envFrom:
+                - secretRef:
+                    name: kubernetes-cloudflare-ddns
+          restartPolicy: OnFailure
